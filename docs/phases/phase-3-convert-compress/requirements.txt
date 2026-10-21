@@ -1,0 +1,30 @@
+# Phase 3 - Conversion and compression
+# This is the Python engine's requirement list. The same content lives in
+# python-engine/requirements.txt, which is the file pip actually uses:
+#
+#     npm run engine:setup        (re-run it: Pillow is new in this phase)
+#
+# Everything from Phases 1-2 is still required (Node.js >= 22, npm packages, Python 3.12+).
+
+# PDF engine: merge, split, organize, thumbnails, compression, PDF to images, PDF to text,
+# text to PDF. License: AGPL-3.0. Tested with 1.28.2.
+PyMuPDF>=1.28,<2
+
+# Reading and converting images (images to PDF: EXIF rotation, transparency, color modes).
+# License: HPND (permissive). Tested with 13.0.0.
+Pillow>=13,<14
+
+# Tests (development only). Tested with 9.1.1.
+pytest>=9,<10
+
+# Optional program, NOT a pip package: LibreOffice (MPL-2.0)
+#   Only needed for "Word to PDF" (.docx, .doc, .odt, .rtf). Everything else works without it.
+#   Free download: libreoffice.org. The engine looks for it on the PATH, in
+#   C:\Program Files\LibreOffice, and in the DOCUFORGE_LIBREOFFICE environment variable.
+#   Tested with LibreOffice 24.2.
+#
+# New npm packages (development only, for the interface tests): jsdom, @testing-library/react,
+# @testing-library/dom. They are already in package.json; npm install adds them.
+#
+# Not used, deliberately: Ghostscript. Compression is done by PyMuPDF, so there is one less
+# program to bundle in Phase 5.

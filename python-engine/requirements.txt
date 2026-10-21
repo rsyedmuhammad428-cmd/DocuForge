@@ -1,0 +1,22 @@
+# DocuForge engine - Phase 4
+# Python 3.12 or newer is recommended (development only; end users get a bundled engine in Phase 5).
+
+# PDF engine: merge, split, reorder, rotate, delete pages, thumbnails, compression,
+# PDF to images, PDF to text, text to PDF.
+# License: AGPL-3.0, which is why DocuForge is AGPL-3.0.
+PyMuPDF>=1.28,<2
+
+# Image reading and conversion (images to PDF). License: HPND (permissive).
+Pillow>=13,<14
+
+# PDF to Word. License: MIT. It brings numpy and opencv-python-headless with it (about 60 MB).
+pdf2docx>=0.5.13,<0.6
+
+# Word (.docx) to PDF without LibreOffice. License: BSD-2-Clause.
+mammoth>=1.13,<2
+
+# Reading and checking Word files. License: MIT.
+python-docx>=1.2,<2
+
+# Tests (development only)
+pytest>=9,<10

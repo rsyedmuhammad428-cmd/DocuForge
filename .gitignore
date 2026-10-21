@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-electron/
+release/
+*.log
+.DS_Store
+python-engine/.venv/
+__pycache__/
+.pytest_cache/

@@ -1,0 +1,45 @@
+# Phase 4 - OCR, history, and the Word conversions
+# This is the Python engine's requirement list. The same content lives in
+# python-engine/requirements.txt, which is the file pip actually uses:
+#
+#     npm run engine:setup        (re-run it after every update: it installs new packages)
+#     npm run engine:check        (shows what is installed and what each package is for)
+#
+# Everything from Phases 1-3 is still required (Node.js >= 22, npm packages, Python 3.12+).
+
+# PDF engine. License: AGPL-3.0. Tested with 1.28.2.
+PyMuPDF>=1.28,<2
+
+# Image reading and conversion. License: HPND (permissive). Tested with 13.0.0.
+Pillow>=13,<14
+
+# PDF to Word with layout. License: MIT. Tested with 0.5.13.
+# Optional in practice: if it cannot be installed or loaded, PDF to Word uses a simpler converter
+# built on PyMuPDF and python-docx.
+# It brings numpy and opencv-python-headless with it (roughly 60 MB installed); Phase 5 must
+# account for that when it bundles the engine.
+pdf2docx>=0.5.13,<0.6
+
+# NEW: Word (.docx) to PDF without LibreOffice. License: BSD-2-Clause. Tested with 1.13.0.
+mammoth>=1.13,<2
+
+# NEW: reading and checking Word files. License: MIT. Tested with 1.2.0.
+python-docx>=1.2,<2
+
+# Tests (development only). Tested with 9.1.1.
+pytest>=9,<10
+
+# Optional programs, NOT pip packages. DocuForge works without both.
+#
+#   Tesseract OCR (Apache-2.0)   needed only for OCR. Free. Tested with 5.3.4.
+#       The Tesseract documentation lists Windows installers; choose the languages you need
+#       during setup. The engine looks on the PATH, in C:\Program Files\Tesseract-OCR, and in the
+#       DOCUFORGE_TESSERACT environment variable.
+#       Only English language data could be tested; other languages use the same code path.
+#
+#   LibreOffice (MPL-2.0)        optional. Gives a closer Word to PDF layout and adds .doc, .odt
+#       and .rtf. Free, from libreoffice.org. Tested with 24.2.
+#       NOT needed for .docx: the built-in converter handles those.
+#
+# New npm packages (development only, for the interface tests): jsdom, @testing-library/react,
+# @testing-library/dom. They are already in package.json; npm install adds them.

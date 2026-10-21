@@ -1,0 +1,23 @@
+# Phase 2 - Core PDF operations
+# This file is the Python engine's requirement list. The same content lives in
+# python-engine/requirements.txt, which is the file pip actually uses:
+#
+#     npm run engine:setup        (creates python-engine/.venv and installs it)
+#
+# Everything from Phase 1 is still required (Node.js >= 22 and the npm packages in package.json).
+
+# System (development only; end users get a bundled engine in Phase 5)
+#   Python 3.12 or newer on the PATH. On Windows, install it from python.org and tick
+#   "Add python.exe to PATH", or use the "py" launcher.
+
+# PDF engine: merge, split, reorder, rotate, delete pages, page thumbnails.
+# License: AGPL-3.0, which is why DocuForge is AGPL-3.0.
+# Tested with 1.28.2.
+PyMuPDF>=1.28,<2
+
+# Tests (development only). Tested with 9.1.1.
+pytest>=9,<10
+
+# Not needed in this phase, and deliberately not listed:
+#   pypdf, Pillow     no operation uses them yet
+#   Ghostscript, Tesseract, LibreOffice, PyInstaller    arrive in later phases
