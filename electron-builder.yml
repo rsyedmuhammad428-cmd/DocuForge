@@ -40,11 +40,15 @@ nsis:
   installerIcon: build/icon.ico
   uninstallerIcon: build/icon.ico
   installerHeaderIcon: build/icon.ico
+  installerHeader: build/installerHeader.bmp
   installerSidebar: build/installerSidebar.bmp
   uninstallerSidebar: build/installerSidebar.bmp
-  createDesktopShortcut: always
-  createStartMenuShortcut: true
+  # The wizard has its own "Choose shortcuts" page (build/installer.nsh), which creates and removes the
+  # desktop and Start Menu shortcuts, so electron-builder's automatic ones are off.
+  createDesktopShortcut: false
+  createStartMenuShortcut: false
   shortcutName: DocuForge
+  # Shows the "Launch DocuForge" checkbox on the last page (text set in build/installer.nsh).
   runAfterFinish: true
   # Uninstalling removes the program and its own settings and history, never the user's documents.
   deleteAppDataOnUninstall: true

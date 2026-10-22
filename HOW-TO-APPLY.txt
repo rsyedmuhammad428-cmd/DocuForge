@@ -1,0 +1,3 @@
+Unzip INTO your DocuForge project folder and choose 'Replace' when asked.
+The folders (build, scripts, docs) match the project, so files land in the right place.
+Then read docs/phases/phase-6-installer-wizard/README.md for the build commands.

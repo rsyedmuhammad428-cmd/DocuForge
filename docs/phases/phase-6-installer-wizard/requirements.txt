@@ -1,0 +1,30 @@
+# Phase 6 - Branded installer wizard
+# Running DocuForge needs nothing from this file: the installer contains everything.
+# This file lists what you need to BUILD the installer. It adds no new dependencies to Phase 5.
+
+# ---- Install once on the build machine (Windows 10/11 x64, or GitHub Actions "windows-latest") ----
+#   Node.js >= 22 and npm
+#   Python 3.12 or newer (tick "Add python.exe to PATH")
+#   Git
+
+# ---- Commands, run in the DocuForge folder ----
+#   npm ci                    installs the app packages from package-lock.json (Electron, electron-builder, ...)
+#   npm run engine:setup      creates python-engine\.venv and installs the packages below
+#   npm run dist              builds everything and writes release\DocuForge-Setup-<version>.exe
+#                             (installs pyinstaller and pip-licenses itself; electron-builder downloads the
+#                              NSIS tools the first time, so the first build needs internet)
+
+# ---- Python engine packages (python-engine/requirements.txt; installed by npm run engine:setup) ----
+PyMuPDF>=1.28,<2          # AGPL-3.0
+Pillow>=13,<14            # HPND
+pdf2docx>=0.5.13,<0.6     # MIT (brings numpy and opencv-python-headless)
+mammoth>=1.13,<2          # BSD-2
+python-docx>=1.2,<2       # MIT
+pytest>=9,<10             # development only
+
+# ---- Build-only Python tools (python-engine/requirements-build.txt; installed by npm run engine:build) ----
+pyinstaller>=6.22,<7      # packages the engine as a standalone program
+pip-licenses>=5.5,<6      # writes THIRD_PARTY_NOTICES.txt
+
+# ---- Optional ----
+#   Tesseract OCR copied to build\bundled-tools\tesseract\ (the GitHub workflow does this for you).
