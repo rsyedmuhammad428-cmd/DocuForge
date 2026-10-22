@@ -77,6 +77,8 @@ function start(): void {
   hardenWebContents()
 
   const launcher = createEngineLauncher({
+    // Tools shipped inside the installer (for example Tesseract) live in <resources>/tools.
+    env: app.isPackaged ? { DOCUFORGE_TOOLS_DIR: path.join(process.resourcesPath, 'tools') } : {},
     resolveCommand: () =>
       resolveEngineCommand({
         isPackaged: app.isPackaged,

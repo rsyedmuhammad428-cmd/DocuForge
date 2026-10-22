@@ -1,0 +1,9 @@
+# Only needed to BUILD the installer (npm run engine:build), never shipped.
+
+# Turns the Python engine into a standalone program so users need no Python.
+# License: GPL-2.0-or-later with a bootloader exception that allows distributing the built program.
+# Tested with 6.22.3.
+pyinstaller>=6.22,<7
+
+# Writes the list of third-party licenses that goes into the installer. License: MIT. Tested with 5.5.5.
+pip-licenses>=5.5,<6

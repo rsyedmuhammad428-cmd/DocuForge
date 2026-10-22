@@ -1,0 +1,34 @@
+# Phase 5 - Installer and release
+# Running DocuForge needs nothing from this file: the installer contains everything.
+# This file lists what you need to BUILD the installer.
+
+# ---- On the machine that builds the installer (Windows 10/11 x64, or GitHub Actions "windows-latest") ----
+#   Node.js >= 22 and npm
+#   Python 3.12 or newer
+#   Git
+#   The npm packages in package.json (npm install). electron-builder 26 downloads Electron and the
+#   NSIS installer tools by itself the first time.
+#
+# ---- Python engine packages (python-engine/requirements.txt; npm run engine:setup installs them) ----
+PyMuPDF>=1.28,<2          # AGPL-3.0.  Tested 1.28.2
+Pillow>=13,<14            # HPND.      Tested 13.0.0
+pdf2docx>=0.5.13,<0.6     # MIT.       Tested 0.5.13  (brings numpy and opencv-python-headless)
+mammoth>=1.13,<2          # BSD-2.     Tested 1.13.0
+python-docx>=1.2,<2       # MIT.       Tested 1.2.0
+pytest>=9,<10             # development only
+
+# ---- Build-only Python tools (python-engine/requirements-build.txt; npm run engine:build installs them) ----
+pyinstaller>=6.22,<7      # Packages the engine as a standalone program.  Tested 6.22.3
+pip-licenses>=5.5,<6      # Writes THIRD_PARTY_NOTICES.txt.               Tested 5.5.5
+
+# ---- Optional, put inside the installer if you want OCR to work out of the box ----
+#   Tesseract OCR (Apache-2.0) copied to build\bundled-tools\tesseract\ (tesseract.exe, its DLLs, and a
+#   tessdata folder). The GitHub Actions workflow does this for you (English, Urdu, Arabic).
+#   Check the license of every language file you bundle. See build\bundled-tools\README.txt.
+#
+# ---- Not bundled, always optional ----
+#   LibreOffice (MPL-2.0): closer Word to PDF layout, and .doc/.odt/.rtf. Word to PDF for .docx works without it.
+#
+# ---- Development-only tools used in this phase (not needed to build the installer) ----
+#   Linux with xvfb, to take screenshots of the real app (scripts/screenshots.mjs).
+#   LibreOffice, to run the PDF to Word fidelity benchmark (python-engine/tools/fidelity).

@@ -3,21 +3,50 @@ productName: DocuForge
 copyright: Copyright (c) DocuForge contributors
 directories:
   output: release
+  buildResources: build
 files:
   - dist/**/*
   - dist-electron/**/*
   - package.json
 asar: true
+# DocuForge never updates itself or contacts a server, so there is no publish or update configuration.
+publish: null
+# Only the English interface language pack of Chromium is needed; the others add about 40 MB.
+electronLanguages:
+  - en-US
+extraResources:
+  # The Python engine, built by "npm run engine:build" (on Windows, to get a Windows engine).
+  - from: python-engine/dist/docuforge-engine
+    to: engine
+  # Optional programs shipped inside the installer (for example Tesseract). See the README in the folder.
+  - from: build/bundled-tools
+    to: tools
+  - from: build/THIRD_PARTY_NOTICES.txt
+    to: THIRD_PARTY_NOTICES.txt
+  - from: LICENSE
+    to: LICENSE.txt
 win:
+  icon: build/icon.ico
   target:
     - target: nsis
       arch:
         - x64
-  artifactName: DocuForge-Setup-${version}-x64.${ext}
+  artifactName: DocuForge-Setup-${version}.${ext}
 nsis:
+  # The classic step-by-step installer: Welcome, License (must accept), Folder, Install, Finish.
   oneClick: false
-  perMachine: false
   allowToChangeInstallationDirectory: true
-  createDesktopShortcut: true
+  license: build/license.txt
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  installerSidebar: build/installerSidebar.bmp
+  uninstallerSidebar: build/installerSidebar.bmp
+  createDesktopShortcut: always
   createStartMenuShortcut: true
   shortcutName: DocuForge
+  runAfterFinish: true
+  # Uninstalling removes the program and its own settings and history, never the user's documents.
+  deleteAppDataOnUninstall: true
+  # Keep the uninstall entry's name tidy in "Apps & features".
+  uninstallDisplayName: DocuForge

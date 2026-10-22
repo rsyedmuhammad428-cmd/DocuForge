@@ -38,6 +38,12 @@ def find_tesseract() -> Path | None:
     if override:
         candidates.append(Path(override))
 
+    # Tesseract shipped inside the installer: <tools folder>/tesseract/tesseract.exe
+    bundled = os.environ.get("DOCUFORGE_TOOLS_DIR")
+    if bundled:
+        for name in ("tesseract.exe", "tesseract"):
+            candidates.append(Path(bundled) / "tesseract" / name)
+
     for name in ("tesseract", "tesseract.exe"):
         found = shutil.which(name)
         if found:
@@ -51,9 +57,20 @@ def find_tesseract() -> Path | None:
     return next((path for path in candidates if path.is_file()), None)
 
 
+def tesseract_environment(tesseract: Path) -> dict[str, str]:
+    """The environment to run Tesseract in. A copy that ships with DocuForge keeps its language data
+    in a `tessdata` folder next to the program; pointing Tesseract at it makes it independent of
+    where Windows installed things."""
+    environment = dict(os.environ)
+    tessdata = tesseract.parent / "tessdata"
+    if tessdata.is_dir():
+        environment["TESSDATA_PREFIX"] = str(tessdata)
+    return environment
+
+
 def tesseract_languages(tesseract: Path) -> list[str]:
     """The language packs that are installed, for example ['eng', 'urd']. 'osd' is not a language."""
-    output = program_output([str(tesseract), "--list-langs"])
+    output = program_output([str(tesseract), "--list-langs"], env=tesseract_environment(tesseract))
     if output is None:
         return []
     languages: list[str] = []

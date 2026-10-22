@@ -26,6 +26,8 @@ export type EngineLauncher = (
 
 export interface LauncherOptions {
   resolveCommand: () => EngineCommand
+  /** Extra environment variables for the engine, for example where bundled tools live. */
+  env?: NodeJS.ProcessEnv
   /** How long the engine gets to stop by itself after a cancel request. */
   killGraceMs?: number
 }
@@ -91,7 +93,7 @@ export function createEngineLauncher(options: LauncherOptions): EngineLauncher {
       cwd: command.cwd,
       stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
-      env: { ...process.env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' },
+      env: { ...process.env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', ...options.env },
     })
 
     const handleLine = (line: string): void => {

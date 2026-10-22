@@ -88,6 +88,84 @@ def _add_text_block(document: Any, block: dict[str, Any], page_width: float) -> 
             _make_rtl(paragraph)
 
 
+def _is_rtl_text(text: str) -> bool:
+    letters = [c for c in text if c.isalpha()]
+    return bool(letters) and sum(1 for c in letters if _RTL_CHARACTERS.match(c)) > len(letters) / 2
+
+
+def _page_is_mostly_rtl(page_dict: dict[str, Any]) -> bool:
+    text = "".join(
+        span["text"]
+        for block in page_dict.get("blocks", [])
+        if block.get("type") == 0
+        for line in block.get("lines", [])
+        for span in line.get("spans", [])
+    )
+    letters = [c for c in text if c.isalpha()]
+    return bool(letters) and sum(1 for c in letters if _RTL_CHARACTERS.match(c)) > len(letters) * 0.3
+
+
+def _rows(page_dict: dict[str, Any]) -> list[list[dict[str, Any]]]:
+    """Groups every text line of the page into visual rows (lines that sit at the same height)."""
+    lines = [
+        line
+        for block in page_dict.get("blocks", [])
+        if block.get("type") == 0
+        for line in block.get("lines", [])
+        if any(span.get("text", "").strip() for span in line.get("spans", []))
+    ]
+    lines.sort(key=lambda line: (line["bbox"][1] + line["bbox"][3]) / 2)
+    rows: list[list[dict[str, Any]]] = []
+    centers: list[float] = []
+    for line in lines:
+        center = (line["bbox"][1] + line["bbox"][3]) / 2
+        height = line["bbox"][3] - line["bbox"][1]
+        if rows and abs(center - centers[-1]) < 0.6 * max(height, 1.0):
+            rows[-1].append(line)
+        else:
+            rows.append([line])
+            centers.append(center)
+    return rows
+
+
+def _add_rtl_page(document: Any, page_dict: dict[str, Any]) -> None:
+    """For right-to-left pages: one paragraph per visual row, fragments ordered right to left.
+
+    PDFs store a right-to-left line as separate pieces. Putting them back in reading order (the
+    rightmost piece first) restores the sentence.
+    """
+    for row in _rows(page_dict):
+        text = "".join(span["text"] for line in row for span in line["spans"])
+        rtl = _is_rtl_text(text)
+        ordered = sorted(row, key=lambda line: -line["bbox"][2] if rtl else line["bbox"][0])
+        spans: list[dict[str, Any]] = []
+        for line in ordered:
+            if spans:
+                spans.append({"text": " ", "flags": 0, "size": line["spans"][0]["size"], "font": "", "color": 0})
+            spans.extend(span for span in line["spans"] if span.get("text"))
+        _add_paragraph(document, spans, rtl)
+
+
+def _add_paragraph(document: Any, spans: list[dict[str, Any]], rtl: bool) -> Any:
+    paragraph = document.add_paragraph()
+    paragraph.paragraph_format.space_after = Pt(4)
+    for span in spans:
+        part = _clean(span["text"])
+        if not part:
+            continue
+        font_name = str(span.get("font", "")).lower()
+        run = paragraph.add_run(part)
+        run.bold = bool(span.get("flags", 0) & 16) or "bold" in font_name
+        run.italic = bool(span.get("flags", 0) & 2) or "italic" in font_name or "oblique" in font_name
+        run.font.size = Pt(max(6.0, min(72.0, round(float(span.get("size", 11)) * 2) / 2)))
+        color = int(span.get("color", 0))
+        if color:
+            run.font.color.rgb = RGBColor((color >> 16) & 255, (color >> 8) & 255, color & 255)
+    if rtl:
+        _make_rtl(paragraph)
+    return paragraph
+
+
 def build_simple_docx(
     source_path: Path, page_numbers: list[int], output_path: Path, ctx: JobContext
 ) -> int:
@@ -107,8 +185,12 @@ def build_simple_docx(
             ctx.check_cancelled()
             page = pdf.load_page(number - 1)
             usable_width = max(50.0, page.rect.width - 2 * _MARGIN_POINTS)
-            for block in page.get_text("dict", sort=True).get("blocks", []):
-                if block.get("type") == 0:
+            page_dict = page.get_text("dict", sort=True)
+            rtl_page = _page_is_mostly_rtl(page_dict)
+            if rtl_page:
+                _add_rtl_page(document, page_dict)
+            for block in page_dict.get("blocks", []):
+                if block.get("type") == 0 and not rtl_page:
                     _add_text_block(document, block, page.rect.width)
                 elif block.get("type") == 1:
                     x0, _, x1, _ = block["bbox"]

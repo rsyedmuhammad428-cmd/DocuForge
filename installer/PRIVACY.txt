@@ -1,0 +1,53 @@
+DOCUFORGE
+PRIVACY POLICY AND LICENSE
+
+Please read this before installing. By clicking "I Agree" you accept the license in part 2.
+
+
+PART 1 - PRIVACY POLICY
+
+1. In short
+DocuForge works entirely on your computer. It does not connect to the internet. It has no
+account, no advertising, no analytics, no tracking and no automatic updates. Your documents are
+never uploaded anywhere, and nothing about you or your documents is sent to the author.
+
+2. What DocuForge stores on your computer
+ - Settings: your theme, your default folder, and your on/off switches.
+ - History (if you keep it turned on in Settings): for each finished job, the names of the input
+   files, the name and folder of the result, the time, and whether it worked. It never stores the
+   contents of your documents or any text that OCR recognized.
+ - Temporary files while a job runs. They are removed when the job ends. If a crash leaves any
+   behind, DocuForge removes its own old ones the next time it starts (you can turn this off).
+ - The results you choose to save, only in the places you choose.
+Your documents are opened and read only when you choose them, and your originals are never changed.
+
+3. Other programs DocuForge may use
+ - Tesseract (for OCR) and LibreOffice (an optional extra for Word to PDF) run on your computer.
+   Nothing is sent to them over a network.
+
+4. Your control
+ - You can turn history off and clear it in Settings at any time.
+ - Uninstalling DocuForge removes the program together with its settings and history. It does not
+   touch your documents or the results you saved.
+
+5. Accuracy
+Conversions, compression and text recognition can contain mistakes, especially with scanned,
+damaged or unusually designed documents. Please check important results.
+
+6. Changes
+If a future version changes this policy, the new version of this text is shown when you install it.
+
+
+PART 2 - LICENSE
+
+DocuForge is free software, released under the GNU Affero General Public License, version 3
+(AGPL-3.0). You may use, study, share and change it. If you share a changed version, you must
+also share its source code under the same license. The full text follows.
+
+Source code: {{SOURCE}}
+
+Licenses of the other free software that DocuForge includes are listed in the file
+THIRD_PARTY_NOTICES.txt in the installation folder.
+
+----------------------------------------------------------------------------------------------
+

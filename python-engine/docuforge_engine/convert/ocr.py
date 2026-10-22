@@ -33,7 +33,7 @@ from ..errors import (
 from ..pdf_tools.common import file_size, get_path, normalize_ranges, open_pdf, same_file
 from ..safe_output import OutputTransaction, PendingOutput
 from ..subprocess_utils import run_cancellable
-from ..tools import find_tesseract, tesseract_languages
+from ..tools import find_tesseract, tesseract_environment, tesseract_languages
 from .images_to_pdf import _prepare
 
 _LANGUAGE = re.compile(r"^[A-Za-z0-9_]{2,30}$")
@@ -80,6 +80,7 @@ def _recognize(
         ctx,
         timeout=_PAGE_TIMEOUT,
         capture_stdout=True,
+        env=tesseract_environment(tesseract),
     )
     if code != 0:
         raise EngineError(CONVERSION_FAILED, "Tesseract could not read one of the pages.")
@@ -93,6 +94,7 @@ def _recognize_to_pdf(
         [str(tesseract), str(image), str(base), "-l", "+".join(languages), "--dpi", str(dpi), "--psm", "3", "pdf"],
         ctx,
         timeout=_PAGE_TIMEOUT,
+        env=tesseract_environment(tesseract),
     )
     produced = base.with_suffix(".pdf")
     if code != 0 or not produced.is_file():

@@ -1,7 +1,7 @@
 {
   "name": "docuforge-desktop",
   "productName": "DocuForge",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Free, open-source, offline-first PDF and document tools for Windows.",
   "author": "DocuForge contributors",
   "license": "AGPL-3.0-only",
@@ -20,11 +20,15 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.electron.json --noEmit && tsc -p tsconfig.node.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "dist": "npm run build && electron-builder --win --x64",
+    "dist": "npm run build && npm run engine:build && npm run notices && electron-builder --win --x64",
     "engine:setup": "node scripts/setup-engine.mjs",
     "engine:test": "node scripts/test-engine.mjs",
     "test:all": "npm test && npm run engine:test",
-    "engine:check": "node scripts/check-engine.mjs"
+    "engine:check": "node scripts/check-engine.mjs",
+    "engine:build": "node scripts/build-engine.mjs",
+    "notices": "node scripts/make-license.mjs && node scripts/generate-notices.mjs",
+    "icons": "python-engine/.venv/bin/python scripts/make-icons.py",
+    "engine:smoke": "node scripts/smoke-engine.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -52,5 +56,13 @@
     "vite": "8.3.4",
     "vitest": "5.0.5",
     "zod": "4.6.7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rsyedmuhammad428-cmd/DocuForge.git"
+  },
+  "homepage": "https://github.com/rsyedmuhammad428-cmd/DocuForge",
+  "bugs": {
+    "url": "https://github.com/rsyedmuhammad428-cmd/DocuForge/issues"
   }
 }

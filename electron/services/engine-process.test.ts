@@ -148,4 +148,16 @@ describe('describeCrash', () => {
     const long = `RuntimeError: ${'x'.repeat(500)}`
     expect(describeCrash(long).message.length).toBeLessThan(260)
   })
+
+  it('passes extra environment variables to the engine', async () => {
+    const launcher = createEngineLauncher({
+      resolveCommand: () => fakeEngine(`${READ_REQUEST}
+        rl.once('line', () => { send({ type: 'result', data: { tools: process.env.DOCUFORGE_TOOLS_DIR } }); process.exit(0); });`),
+      env: { DOCUFORGE_TOOLS_DIR: 'C:\\App\\resources\\tools' },
+    })
+    expect(await launcher(request, () => undefined).outcome).toEqual({
+      kind: 'result',
+      data: { tools: 'C:\\App\\resources\\tools' },
+    })
+  })
 })

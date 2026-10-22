@@ -1,4 +1,4 @@
-import { History, ShieldCheck, Upload } from 'lucide-react'
+import { History, ShieldCheck } from 'lucide-react'
 import { useJobs } from '../../hooks/useJobs'
 import { Link } from 'react-router'
 import { StatusBadge } from '../../components/common/StatusBadge'
@@ -27,22 +27,9 @@ export function HomePage() {
         </p>
       </section>
 
-      <section aria-label="Add files">
-        <div
-          aria-disabled="true"
-          className="flex flex-col items-center gap-2 rounded-card border border-dashed border-border bg-surface px-6 py-10 text-center"
-        >
-          <Upload size={24} className="text-muted" aria-hidden="true" />
-          <p className="font-medium text-muted">Drag and drop is not available yet</p>
-          <p className="max-w-prose text-sm text-muted">
-            Open a tool below and use its button to choose your PDF files.
-          </p>
-        </div>
-      </section>
-
       <section aria-labelledby="tools-heading">
         <h2 id="tools-heading" className="mb-3 text-base font-semibold">
-          Tools
+          What do you want to do?
         </h2>
         <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {TOOLS.map((tool) => (

@@ -24,8 +24,12 @@ def run_check() -> int:
     problems = 0
     for module, distribution, purpose, required in _PACKAGES:
         try:
-            importlib.import_module(module)
-            version = importlib.metadata.version(distribution)
+            imported = importlib.import_module(module)
+            try:
+                version = importlib.metadata.version(distribution)
+            except importlib.metadata.PackageNotFoundError:
+                # A packaged program has no install records; the module usually knows its version.
+                version = str(getattr(imported, "__version__", "") or getattr(imported, "version", "") or "installed")
             print(f"  ok       {distribution} {version}  ({purpose})")
         except Exception as exc:  # noqa: BLE001 - report any reason a package cannot be used
             label = "MISSING " if required else "optional"

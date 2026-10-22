@@ -7,3 +7,9 @@ release/
 python-engine/.venv/
 __pycache__/
 .pytest_cache/
+python-engine/dist/
+python-engine/build/
+python-engine/*.spec
+build/license.txt
+build/THIRD_PARTY_NOTICES.txt
+build/bundled-tools/tesseract/

@@ -78,7 +78,7 @@ def run_cancellable(
         return exit_code, captured.read() if capture_stdout else b""
 
 
-def program_output(command: list[str], timeout: float = 20) -> str | None:
+def program_output(command: list[str], timeout: float = 20, env: dict[str, str] | None = None) -> str | None:
     """Runs a quick program (for example `tesseract --list-langs`) and returns its output, or None."""
     try:
         completed = subprocess.run(
@@ -87,6 +87,7 @@ def program_output(command: list[str], timeout: float = 20) -> str | None:
             timeout=timeout,
             check=False,
             stdin=subprocess.DEVNULL,
+            env=env,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,  # type: ignore[attr-defined]
         )
     except (OSError, subprocess.TimeoutExpired):
