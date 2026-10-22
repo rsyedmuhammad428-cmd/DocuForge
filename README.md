@@ -144,8 +144,8 @@ See [LICENSE](LICENSE) for the full license text.
 
 **Syed Muhammad Raza Zaidi**
 
+- Portfolio: [Raza AI Portfolio](https://raza-ai-portfolio.vercel.app/)
 - GitHub: [@rsyedmuhammad428-cmd](https://github.com/rsyedmuhammad428-cmd)
-- Portfolio: [Visit Portfolio](https://rsyedmuhammad428-cmd.github.io/Portfolio/#home)
 
 ---
 
