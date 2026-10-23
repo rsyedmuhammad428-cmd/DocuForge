@@ -9,6 +9,49 @@ from pathlib import Path
 from .subprocess_utils import program_output
 
 
+def find_word() -> Path | None:
+    """Looks for Microsoft Word: DOCUFORGE_WORD, registry App Paths, the PATH, then standard Office folders."""
+    candidates: list[Path] = []
+
+    override = os.environ.get("DOCUFORGE_WORD")
+    if override:
+        candidates.append(Path(override))
+
+    if os.name == "nt":
+        try:
+            import winreg
+
+            for root_key in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
+                for subkey in (
+                    r"Software\Microsoft\Windows\CurrentVersion\App Paths\Winword.exe",
+                    r"Software\Microsoft\Windows\CurrentVersion\App Paths\winword.exe",
+                ):
+                    try:
+                        with winreg.OpenKey(root_key, subkey) as key:
+                            val, _ = winreg.QueryValueEx(key, "")
+                            if val:
+                                candidates.append(Path(val))
+                    except OSError:
+                        pass
+        except ImportError:
+            pass
+
+    for name in ("winword", "winword.exe", "WINWORD.EXE"):
+        found = shutil.which(name)
+        if found:
+            candidates.append(Path(found))
+
+    for variable in ("ProgramFiles", "ProgramFiles(x86)"):
+        root = os.environ.get(variable)
+        if root:
+            root_path = Path(root) / "Microsoft Office"
+            if root_path.is_dir():
+                for match in root_path.glob("**/WINWORD.EXE"):
+                    candidates.append(match)
+
+    return next((path for path in candidates if path.is_file()), None)
+
+
 def find_libreoffice() -> Path | None:
     """Looks for LibreOffice: DOCUFORGE_LIBREOFFICE, then the PATH, then the usual Windows folders."""
     candidates: list[Path] = []

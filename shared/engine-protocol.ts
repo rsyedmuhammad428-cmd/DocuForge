@@ -76,6 +76,7 @@ export const ThumbnailsDataSchema = z.object({
 })
 
 export const ToolsStatusDataSchema = z.object({
+  word: z.boolean().default(false),
   libreoffice: z.boolean(),
   tesseract: z.object({ found: z.boolean(), languages: z.array(z.string().max(30)).max(300) }),
 })

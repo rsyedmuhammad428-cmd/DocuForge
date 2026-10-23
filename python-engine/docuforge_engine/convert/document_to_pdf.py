@@ -7,7 +7,9 @@ Word's, and it is the only way to convert .doc, .odt and .rtf files.
 
 from __future__ import annotations
 
+import os
 import shutil
+import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
@@ -26,7 +28,7 @@ from ..errors import (
 from ..pdf_tools.common import file_size, get_path, same_file
 from ..safe_output import OutputTransaction, PendingOutput
 from ..subprocess_utils import run_cancellable
-from ..tools import find_libreoffice, find_tesseract, tesseract_languages
+from ..tools import find_libreoffice, find_tesseract, find_word, tesseract_languages
 
 _TIMEOUT_SECONDS = 300
 _SUPPORTED_EXTENSIONS = {".docx", ".doc", ".odt", ".rtf"}
@@ -66,6 +68,7 @@ _BUILTIN_NOTE = (
     "kept; headers, footers, page numbers and exact page layout are not."
 )
 _LIBREOFFICE_NOTE = "Converted with LibreOffice. Layout can differ slightly from Microsoft Word."
+_WORD_NOTE = "Converted with Microsoft Word for exact layout and formatting."
 
 
 def document_to_pdf(args: dict[str, Any], ctx: JobContext) -> dict[str, Any]:
@@ -87,19 +90,29 @@ def document_to_pdf(args: dict[str, Any], ctx: JobContext) -> dict[str, Any]:
             f"'{source_path.name}' is damaged or is not really a {extension} document.",
         )
 
+    word = find_word()
     office = find_libreoffice()
-    use_builtin = extension == ".docx" and (office is None or method == "basic")
-    if not use_builtin and office is None:
+
+    if method == "auto":
+        if word is not None:
+            return _convert_with_word(word, source_path, output, ctx)
+        if office is not None:
+            return _convert_with_libreoffice(office, source_path, output, ctx)
+        if extension == ".docx":
+            return _convert_builtin(source_path, output, ctx)
         raise EngineError(
             TOOL_NOT_FOUND,
-            f"{extension} files need LibreOffice, which was not found. Save the file as .docx in "
-            "Word and convert that, or install the free LibreOffice from libreoffice.org.",
+            f"{extension} files need Microsoft Word or LibreOffice, which was not found. Save the file as .docx in "
+            "Word and convert that, or install Microsoft Word or the free LibreOffice from libreoffice.org.",
         )
 
-    if use_builtin:
-        return _convert_builtin(source_path, output, ctx)
-    assert office is not None
-    return _convert_with_libreoffice(office, source_path, output, ctx)
+    # method == "basic"
+    if extension != ".docx":
+        raise EngineError(
+            TOOL_NOT_FOUND,
+            f"{extension} files cannot be converted with basic mode. Use Microsoft Word or LibreOffice.",
+        )
+    return _convert_builtin(source_path, output, ctx)
 
 
 def _convert_builtin(source_path: Path, output: Path, ctx: JobContext) -> dict[str, Any]:
@@ -175,10 +188,115 @@ def _convert_with_libreoffice(
     }
 
 
+_WORD_SCRIPT = """param([string]$InputPath, [string]$OutputPath, [string]$PidPath)
+$ErrorActionPreference = 'Stop'
+$word = $null
+$doc = $null
+try {
+    $pidsBefore = @(Get-Process -Name WINWORD -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
+    $word = New-Object -ComObject Word.Application
+    $word.Visible = $false
+    $word.DisplayAlerts = 0
+    $pidsAfter = @(Get-Process -Name WINWORD -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
+    $myPid = ($pidsAfter | Where-Object { $pidsBefore -notcontains $_ }) | Select-Object -First 1
+    if ($myPid -and $PidPath) {
+        [System.IO.File]::WriteAllText($PidPath, "$myPid")
+    }
+    $doc = $word.Documents.Open($InputPath, $false, $true)
+    $doc.ExportAsFixedFormat($OutputPath, 17)
+}
+catch {
+    Write-Error $_
+    exit 1
+}
+finally {
+    if ($doc -ne $null) {
+        try { $doc.Close(0) } catch {}
+        [System.Runtime.InteropServices.Marshal]::ReleaseComObject($doc) | Out-Null
+    }
+    if ($word -ne $null) {
+        try { $word.Quit(0) } catch {}
+        [System.Runtime.InteropServices.Marshal]::ReleaseComObject($word) | Out-Null
+    }
+    if ($PidPath -and (Test-Path $PidPath)) {
+        Remove-Item -Force $PidPath -ErrorAction SilentlyContinue
+    }
+    [GC]::Collect()
+    [GC]::WaitForPendingFinalizers()
+}
+"""
+
+
+def _convert_with_word(
+    _word_bin: Path, source_path: Path, output: Path, ctx: JobContext
+) -> dict[str, Any]:
+    work = Path(tempfile.mkdtemp(prefix="docuforge-word-"))
+    pid_file = work / "word.pid"
+    script_path = work / "convert.ps1"
+    temp_pdf = work / f"{source_path.stem}.pdf"
+
+    try:
+        script_path.write_text(_WORD_SCRIPT, encoding="utf-8")
+        powershell = shutil.which("powershell.exe") or shutil.which("powershell") or "powershell.exe"
+        command = [
+            powershell,
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(script_path),
+            str(source_path.resolve()),
+            str(temp_pdf.resolve()),
+            str(pid_file.resolve()),
+        ]
+
+        ctx.progress(1, 3)
+        exit_code, _ = run_cancellable(command, ctx, timeout=_TIMEOUT_SECONDS)
+
+        if exit_code != 0 or not temp_pdf.is_file():
+            raise EngineError(
+                CONVERSION_FAILED,
+                f"Microsoft Word could not convert '{source_path.name}'. The file may be damaged "
+                "or password protected.",
+            )
+        ctx.progress(2, 3)
+
+        with pymupdf.open(temp_pdf) as check:
+            page_count = check.page_count
+
+        with OutputTransaction(ctx) as transaction:
+            temp = transaction.new_temp(output)
+            shutil.copyfile(temp_pdf, temp)
+            (final,) = transaction.commit([PendingOutput(temp, output, page_count)], overwrite=True)
+        ctx.progress(3, 3)
+    finally:
+        if pid_file.is_file():
+            try:
+                raw_pid = pid_file.read_text(encoding="utf-8").strip()
+                if raw_pid.isdigit() and os.name == "nt":
+                    subprocess.run(
+                        ["taskkill", "/PID", raw_pid, "/F"],
+                        capture_output=True,
+                        check=False,
+                    )
+            except Exception:
+                pass
+        shutil.rmtree(work, ignore_errors=True)
+
+    return {
+        "outputPaths": [str(final)],
+        "pageCount": page_count,
+        "sizeBytes": file_size(final),
+        "note": _WORD_NOTE,
+    }
+
+
 def tools_status(_args: dict[str, Any], _ctx: JobContext) -> dict[str, Any]:
     """Which optional programs were found. Never includes their paths."""
     tesseract = find_tesseract()
     return {
+        "word": find_word() is not None,
         "libreoffice": find_libreoffice() is not None,
         "tesseract": {
             "found": tesseract is not None,

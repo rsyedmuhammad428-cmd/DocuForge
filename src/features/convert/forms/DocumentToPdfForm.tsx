@@ -3,11 +3,16 @@ import { Notice } from '../../../components/common/Notice'
 import { bridge, errorMessage } from '../../../lib/bridge'
 import { SimpleToPdfForm } from './SimpleToPdfForm'
 
-type Status = { state: 'checking' } | { state: 'found' } | { state: 'missing' } | { state: 'error'; message: string }
+type Status =
+  | { state: 'checking' }
+  | { state: 'word' }
+  | { state: 'libreoffice' }
+  | { state: 'missing' }
+  | { state: 'error'; message: string }
 
 /**
- * .docx works with no extra software (basic layout). LibreOffice, if installed, gives a closer
- * layout and is the only way to convert .doc, .odt and .rtf. This tells the user which applies.
+ * Word converts with Microsoft Word or LibreOffice for exact layout and line breaks.
+ * If neither is installed, .docx works with the built-in converter (basic layout).
  */
 export function DocumentToPdfForm() {
   const [status, setStatus] = useState<Status>({ state: 'checking' })
@@ -15,7 +20,9 @@ export function DocumentToPdfForm() {
   const lookup = useCallback(async (): Promise<Status> => {
     try {
       const tools = await bridge.getToolsStatus()
-      return { state: tools.libreoffice ? 'found' : 'missing' }
+      if (tools.word) return { state: 'word' }
+      if (tools.libreoffice) return { state: 'libreoffice' }
+      return { state: 'missing' }
     } catch (error) {
       return { state: 'error', message: errorMessage(error) }
     }
@@ -31,11 +38,17 @@ export function DocumentToPdfForm() {
     }
   }, [lookup])
 
-  const libreOfficeFound = status.state === 'found'
+  const officeFound = status.state === 'word' || status.state === 'libreoffice'
 
   return (
     <div className="space-y-6">
-      {status.state === 'found' && (
+      {status.state === 'word' && (
+        <p className="text-sm text-muted">
+          Microsoft Word was found. It will be used for exact layout, formatting, and line breaks
+          matching your Word file.
+        </p>
+      )}
+      {status.state === 'libreoffice' && (
         <p className="text-sm text-muted">
           LibreOffice was found. It will be used for the closest layout, and .doc, .odt and .rtf files
           are supported.
@@ -44,7 +57,7 @@ export function DocumentToPdfForm() {
       {status.state === 'missing' && (
         <p className="text-sm text-muted">
           .docx files convert with DocuForge's built-in converter (basic layout). For .doc, .odt and
-          .rtf files, save them as .docx in Word first, or install the free LibreOffice from
+          .rtf files, save them as .docx in Word first, or install Microsoft Word or the free LibreOffice from
           libreoffice.org.
         </p>
       )}
@@ -56,8 +69,8 @@ export function DocumentToPdfForm() {
         chooseLabel="Choose a document"
         convertLabel="Convert to PDF"
         blockedReason={(file) =>
-          !libreOfficeFound && status.state !== 'checking' && !file.name.toLowerCase().endsWith('.docx')
-            ? `${file.name.slice(file.name.lastIndexOf('.'))} files need LibreOffice. Save the file as .docx in Word and convert that, or install the free LibreOffice from libreoffice.org.`
+          !officeFound && status.state !== 'checking' && !file.name.toLowerCase().endsWith('.docx')
+            ? `${file.name.slice(file.name.lastIndexOf('.'))} files need Microsoft Word or LibreOffice. Save the file as .docx in Word and convert that, or install Microsoft Word or the free LibreOffice from libreoffice.org.`
             : null
         }
       />

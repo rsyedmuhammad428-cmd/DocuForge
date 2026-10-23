@@ -34,6 +34,26 @@ def docx_to_pdf_bytes(path: Path, ctx: JobContext) -> tuple[bytes, int, list[str
     if path.stat().st_size > _MAX_FILE_BYTES:
         raise EngineError(CONVERSION_FAILED, f"'{path.name}' is too large for the built-in converter.")
 
+    page_rect = _PAGE
+    content_rect = _CONTENT
+    try:
+        import docx
+
+        doc = docx.Document(str(path))
+        if doc.sections:
+            section = doc.sections[0]
+            w = float(section.page_width.pt)
+            h = float(section.page_height.pt)
+            top = float(section.top_margin.pt)
+            bottom = float(section.bottom_margin.pt)
+            left = float(section.left_margin.pt)
+            right = float(section.right_margin.pt)
+            if w > 0 and h > 0 and left + right < w and top + bottom < h:
+                page_rect = pymupdf.Rect(0, 0, w, h)
+                content_rect = pymupdf.Rect(left, top, w - right, h - bottom)
+    except Exception:
+        pass
+
     archive = pymupdf.Archive()
     image_count = 0
 
@@ -47,11 +67,16 @@ def docx_to_pdf_bytes(path: Path, ctx: JobContext) -> tuple[bytes, int, list[str
 
     try:
         with open(path, "rb") as handle:
-            result = mammoth.convert_to_html(handle, convert_image=mammoth.images.img_element(store_image))
+            result = mammoth.convert_to_html(
+                handle,
+                convert_image=mammoth.images.img_element(store_image),
+                ignore_empty_paragraphs=False,
+            )
     except Exception as exc:  # noqa: BLE001 - the library raises many kinds of errors on bad input
         raise EngineError(CONVERSION_FAILED, f"'{path.name}' could not be read as a Word document.") from exc
 
-    body = _TAGS_WITHOUT_ATTRIBUTES.sub(lambda m: f'<{m.group(1)} dir="auto">', result.value)
+    raw_html = re.sub(r"<p>\s*</p>", "<p>&nbsp;</p>", result.value)
+    body = _TAGS_WITHOUT_ATTRIBUTES.sub(lambda m: f'<{m.group(1)} dir="auto">', raw_html)
     story = pymupdf.Story(f"{_STYLE}{body}", archive=archive)
 
     buffer = io.BytesIO()
@@ -62,8 +87,8 @@ def docx_to_pdf_bytes(path: Path, ctx: JobContext) -> tuple[bytes, int, list[str
         ctx.check_cancelled()
         if pages >= _MAX_PAGES:
             raise EngineError(TEXT_TOO_LARGE, "This document would make too many pages to convert.")
-        device = writer.begin_page(_PAGE)
-        more, _ = story.place(_CONTENT)
+        device = writer.begin_page(page_rect)
+        more, _ = story.place(content_rect)
         story.draw(device)
         writer.end_page()
         pages += 1

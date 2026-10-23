@@ -181,6 +181,12 @@ export function SettingsPage() {
                 'Not found. Needed to read scanned documents.'
               )}
             </dd>
+            <dt className="font-medium">Microsoft Word</dt>
+            <dd>
+              {tools.value.word
+                ? 'Found. Used for exact Word to PDF layout, formatting, and line breaks.'
+                : 'Not found.'}
+            </dd>
             <dt className="font-medium">LibreOffice</dt>
             <dd>
               {tools.value.libreoffice

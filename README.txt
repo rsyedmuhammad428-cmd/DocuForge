@@ -3,7 +3,7 @@
                   "DocuForge - Powered by RazaZaidi.AI"
 ================================================================================
 
-Version:       0.5.0
+Version:       0.5.0a
 Target OS:     Windows 10 / Windows 11 (64-bit x64)
 License:       GNU Affero General Public License v3.0 (AGPL-3.0-only)
 Repository:    https://github.com/rsyedmuhammad428-cmd/DocuForge.git

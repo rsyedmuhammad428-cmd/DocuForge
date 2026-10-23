@@ -67,6 +67,13 @@ describe('Convert page', () => {
     expect(await screen.findByText(/LibreOffice was found/i)).toBeTruthy()
   })
 
+  it('mentions Microsoft Word for exact layout when it is found', async () => {
+    getToolsStatus.mockResolvedValue({ word: true, libreoffice: false })
+    renderPage()
+    fireEvent.click(screen.getByRole('radio', { name: /Word to PDF/i }))
+    expect(await screen.findByText(/Microsoft Word was found/i)).toBeTruthy()
+  })
+
   it('explains PDF to Word limits honestly', () => {
     renderPage()
     fireEvent.click(screen.getByRole('radio', { name: /PDF to Word/i }))

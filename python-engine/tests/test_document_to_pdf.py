@@ -9,11 +9,12 @@ from docuforge_engine import errors
 from docuforge_engine.convert import document_to_pdf as module
 from docuforge_engine.convert.document_to_pdf import document_to_pdf, tools_status
 from docuforge_engine.errors import EngineError
-from docuforge_engine.tools import find_libreoffice
+from docuforge_engine.tools import find_libreoffice, find_word
 
 from .conftest import leftover_temp_files
 
 needs_libreoffice = pytest.mark.skipif(find_libreoffice() is None, reason="LibreOffice is not installed")
+needs_word = pytest.mark.skipif(find_word() is None, reason="Microsoft Word is not installed")
 
 _CONTENT_TYPES = (
     '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
@@ -101,7 +102,23 @@ def rich_docx(path):
     return path
 
 
+@needs_word
+def test_a_word_document_converts_with_microsoft_word(tmp_path, make_ctx):
+    source = rich_docx(tmp_path / "notes.docx")
+    output = tmp_path / "notes.pdf"
+    result = document_to_pdf({"input": str(source), "output": str(output)}, make_ctx())
+
+    assert "Microsoft Word" in result["note"]
+    assert result["pageCount"] >= 1
+    with pymupdf.open(output) as document:
+        text = "".join(p.get_text() for p in document)
+        assert "Meeting Notes" in text
+        assert "Plain text, bold" in text
+    assert leftover_temp_files(tmp_path) == []
+
+
 def test_docx_converts_without_libreoffice(tmp_path, make_ctx, monkeypatch):
+    monkeypatch.setattr(module, "find_word", lambda: None)
     monkeypatch.setattr(module, "find_libreoffice", lambda: None)
     source = rich_docx(tmp_path / "notes.docx")
     output = tmp_path / "notes.pdf"
@@ -117,6 +134,34 @@ def test_docx_converts_without_libreoffice(tmp_path, make_ctx, monkeypatch):
     assert leftover_temp_files(tmp_path) == []
 
 
+def test_the_builtin_converter_keeps_empty_line_breaks(tmp_path, make_ctx, monkeypatch):
+    import docx
+
+    monkeypatch.setattr(module, "find_word", lambda: None)
+    monkeypatch.setattr(module, "find_libreoffice", lambda: None)
+    document = docx.Document()
+    document.add_paragraph("Paragraph 1")
+    document.add_paragraph("")
+    p = document.add_paragraph("Paragraph 2 line 1")
+    p.add_run().add_break()
+    p.add_run("Paragraph 2 line 2")
+    source = tmp_path / "breaks.docx"
+    document.save(source)
+    output = tmp_path / "breaks.pdf"
+
+    result = document_to_pdf({"input": str(source), "output": str(output)}, make_ctx())
+    assert "built-in converter" in result["note"]
+    with pymupdf.open(output) as doc:
+        text = doc[0].get_text()
+        assert "Paragraph 1" in text
+        assert "Paragraph 2 line 1" in text
+        assert "Paragraph 2 line 2" in text
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        assert "Paragraph 1" in lines
+        assert "Paragraph 2 line 1" in lines
+        assert "Paragraph 2 line 2" in lines
+
+
 def test_the_basic_method_can_be_chosen_even_when_libreoffice_exists(tmp_path, make_ctx):
     source = rich_docx(tmp_path / "notes.docx")
     result = document_to_pdf(
@@ -126,13 +171,15 @@ def test_the_basic_method_can_be_chosen_even_when_libreoffice_exists(tmp_path, m
 
 
 @needs_libreoffice
-def test_libreoffice_is_preferred_for_docx_when_installed(tmp_path, make_ctx):
+def test_libreoffice_is_preferred_for_docx_when_installed(tmp_path, make_ctx, monkeypatch):
+    monkeypatch.setattr(module, "find_word", lambda: None)
     source = make_docx(tmp_path / "letter.docx", "Hello DocuForge")
     result = document_to_pdf({"input": str(source), "output": str(tmp_path / "o.pdf")}, make_ctx())
     assert "LibreOffice" in result["note"]
 
 
 def test_older_formats_need_libreoffice_and_say_how_to_get_around_it(tmp_path, make_ctx, monkeypatch):
+    monkeypatch.setattr(module, "find_word", lambda: None)
     monkeypatch.setattr(module, "find_libreoffice", lambda: None)
     source = tmp_path / "old.rtf"
     source.write_bytes(b"{\\rtf1\\ansi Hello}")
@@ -141,9 +188,11 @@ def test_older_formats_need_libreoffice_and_say_how_to_get_around_it(tmp_path, m
     assert error.value.code == errors.TOOL_NOT_FOUND
     assert "Save the file as .docx" in error.value.message
     assert tools_status({}, make_ctx())["libreoffice"] is False
+    assert tools_status({}, make_ctx())["word"] is False
 
 
 def test_a_damaged_docx_fails_before_any_converter_runs(tmp_path, make_ctx, monkeypatch):
+    monkeypatch.setattr(module, "find_word", lambda: None)
     monkeypatch.setattr(module, "find_libreoffice", lambda: None)
     source = tmp_path / "broken.docx"
     source.write_bytes(b"not a word document")
@@ -155,6 +204,7 @@ def test_a_damaged_docx_fails_before_any_converter_runs(tmp_path, make_ctx, monk
 def test_the_builtin_converter_flows_long_documents_onto_more_pages(tmp_path, make_ctx, monkeypatch):
     import docx
 
+    monkeypatch.setattr(module, "find_word", lambda: None)
     monkeypatch.setattr(module, "find_libreoffice", lambda: None)
     document = docx.Document()
     for number in range(200):
@@ -167,6 +217,7 @@ def test_the_builtin_converter_flows_long_documents_onto_more_pages(tmp_path, ma
 
 
 def test_the_builtin_converter_can_be_cancelled(tmp_path, make_ctx, monkeypatch):
+    monkeypatch.setattr(module, "find_word", lambda: None)
     monkeypatch.setattr(module, "find_libreoffice", lambda: None)
     source = rich_docx(tmp_path / "notes.docx")
     output = tmp_path / "o.pdf"

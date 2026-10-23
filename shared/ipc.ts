@@ -49,6 +49,8 @@ export interface IpcError {
 export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: IpcError }
 
 export interface ToolsStatus {
+  /** Optional. Gives exact layout and line breaks for Word to PDF using Microsoft Word. */
+  word: boolean
   /** Optional. Gives a closer layout for Word to PDF and adds .doc, .odt and .rtf. */
   libreoffice: boolean
   /** Needed for OCR. `languages` are the installed language packs, for example "eng". */
